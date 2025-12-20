@@ -6,11 +6,12 @@
 #define FIREBASE_HOST "https://glucoesp32-default-rtdb.asia-southeast1.firebasedatabase.app/"
 #define FIREBASE_AUTH "5PrNU6D2w9MqcG6djwoFtgmgwphHhINvnkq53o1d"
 
-const char* WIFI_SSID = "ojiks";
-const char* WIFI_PASSWORD = "12345678";
+const char* WIFI_SSID = "LAB Adikarsa 14";
+const char* WIFI_PASSWORD = "adikarsa2025";
 
 FirebaseAuth auth;
-FirebaseData fbdo ;
+FirebaseData fbdoControl; 
+FirebaseData fbdoWrite; 
 FirebaseConfig config;
 FirebaseJson json;
 
@@ -21,7 +22,7 @@ String database;
 
 int analPin = 34;
 float gluc = 0.0;
-float SugarLevel;
+float SugarLevel, hasil;
 String tanggal, waktu;
 
 WiFiUDP ntp;
@@ -58,22 +59,23 @@ void prosesSampel(){
 
   for (int i = 0; i < jmlSampel; i++)
   {
-    gluc = analogRead(analPin);
-    total += gluc ;
-
-    delay(1000);
+    gluc = analogRead(analPin); 
+    total += gluc;              
+    
+  
+    Serial.print("Sampel ke-");
+    Serial.print(i + 1); 
+    Serial.print(": ");
+    Serial.println(gluc);
+    
+    delay(1000); 
   }
 
-  float hasil = (float)total /jmlSampel;
-  Serial.print("Hasil Analog : ");
-  Serial.println(hasil);
-  
+  hasil = (float)total /jmlSampel;
   SugarLevel = (1.3798* hasil) - 38.53;
 
-  if (SugarLevel < 0)
-  {
-    SugarLevel = 0;
-  }
+  Serial.print("Rata-rata (x)    : "); 
+  Serial.println(hasil);
   Serial.print("Hasil Pengukuran : ");
   Serial.println(SugarLevel);
   
@@ -88,66 +90,75 @@ void setup() {
 
   config.host = FIREBASE_HOST;
   config.signer.tokens.legacy_token = FIREBASE_AUTH;
+
+  fbdoControl.setResponseSize(1024);
+  fbdoWrite.setResponseSize(1024);
+
   Firebase.begin (&config, &auth);
   Firebase.reconnectWiFi(true);
 
   waktu32.begin();
   waktu32.setTimeOffset(8 * 3600);
 
-  Firebase.setString(fbdo, control, "");
-  Firebase.setString(fbdo, status, "STANDBY");
-  
-  
-  Serial.println("-----------------------------------");
-  Serial.println("Menunggu perintah dari Aplikasi...");
-  Serial.println("-----------------------------------");
-
 }
-
 
 void loop() {
-  if (Firebase.getString(fbdo, control))
-  {
-    userID = fbdo.stringData();
-    if (userID != "" &&userID != "null")
-    {
-      Serial.print("User : ");
-      Serial.println(userID);
-
-      Firebase.setString(fbdo, control, "");
     
-      Serial.println("Pengukuran Ready");
-      Firebase.setString(fbdo, status, "Ready");
-      delay(3000);
-      prosesSampel();
-      getWaktu();
-
-      json.set("SugarLevel", String(SugarLevel));
-      json.set("Waktu", String(waktu));
-      json.set("Tanggal", String(tanggal));
-
-      database = "/Data/", userID;
-
-      Serial.println("Mengirim ke: ");
-      Serial.println(database); 
-
-      if (Firebase.pushJSON(fbdo, database.c_str(), json))
-      {
-        Serial.println("Sukses");
-        Firebase.setString(fbdo, control, "");
-
-        Firebase.setString(fbdo, status, "Selesai");
-
-      } else {
-        Serial.println("Gagal");
-        Serial.println(fbdo.errorReason());
-      }
-    } 
-  } else {
-      Serial.print(".");
-      delay(500);
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[LOOP] WiFi Terputus! Mencoba reconnect...");
+    WiFi.reconnect();
+    delay(2000); 
+    return; 
   }
+  Serial.print(".");
 
-  delay(100);
+  if (Firebase.getString(fbdoControl, control)) {
+    String tempUID = fbdoControl.stringData();
+    tempUID.trim();
+
+    if (tempUID != "" && tempUID != "null" && tempUID.length() > 5) {
+      Serial.println("\n[LOOP] Perintah Diterima!");
+      Serial.print("UID: "); Serial.println(tempUID);
+
+      if (Firebase.deleteNode(fbdoWrite, control)) {
+        Serial.println("[LOOP] Perintah dihapus. Mulai proses...");
+
+        userID = tempUID;
+
+        Firebase.setString(fbdoWrite, status, "SIAP_UKUR");
+        Serial.println("Status: SIAP_UKUR (Menunggu user 3 detik...)");
+        
+        delay(3000); 
+        
+        prosesSampel();
+        getWaktu();
+
+        json.set("SugarLevel", String(SugarLevel));
+        json.set("ADC", String(hasil)); 
+        json.set("Waktu", waktu);
+        json.set("Tanggal", tanggal);
+
+        database = "/Data/" + userID;
+        
+        if (Firebase.pushJSON(fbdoWrite, database.c_str(), json)) {
+          Serial.println("[LOOP] Kirim SUKSES!");
+          Firebase.setString(fbdoWrite, status, "SELESAI");
+        } else {
+          Serial.print("[LOOP] Kirim GAGAL: ");
+          Serial.println(fbdoWrite.errorReason());
+          Firebase.setString(fbdoWrite, status, "STANDBY");
+        }
+
+        delay(2000);
+        Firebase.setString(fbdoWrite, status, "STANDBY");
+        Serial.println("Selesai. Kembali ke STANDBY.");
+      } else {
+        Serial.println("Gagal menghapus perintah (Mungkin koneksi sibuk). Coba lagi nanti.");
+      }
+    }
+  } else {
+    Serial.print(".");
+  }
+  
+  delay(500);
 }
-
