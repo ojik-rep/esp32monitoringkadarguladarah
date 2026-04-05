@@ -61,18 +61,15 @@ void prosesSampel(){
   {
     gluc = analogRead(analPin); 
     total += gluc;              
-    delay(10000);
-  
+
     Serial.print("Sampel ke-");
     Serial.print(i + 1); 
     Serial.print(": ");
     Serial.println(gluc);
-    
-    delay(1000); 
   }
 
   hasil = (float)total /jmlSampel;
-  SugarLevel = (1.3798* hasil) - 38.53;
+  SugarLevel = (0.00568* hasil) - 125.1668;
 
   Serial.print("Rata-rata (x)    : "); 
   Serial.println(hasil);
