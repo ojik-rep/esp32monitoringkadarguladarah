@@ -6,8 +6,8 @@
 #define FIREBASE_HOST "https://glucoesp32-default-rtdb.asia-southeast1.firebasedatabase.app/"
 #define FIREBASE_AUTH "5PrNU6D2w9MqcG6djwoFtgmgwphHhINvnkq53o1d"
 
-const char* WIFI_SSID = "LAB Adikarsa 14";
-const char* WIFI_PASSWORD = "adikarsa2025";
+const char* WIFI_SSID = "ojiks";
+const char* WIFI_PASSWORD = "12345678";
 
 FirebaseAuth auth;
 FirebaseData fbdoControl; 
@@ -61,7 +61,7 @@ void prosesSampel(){
   {
     gluc = analogRead(analPin); 
     total += gluc;              
-    
+    delay(10000);
   
     Serial.print("Sampel ke-");
     Serial.print(i + 1); 
