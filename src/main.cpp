@@ -24,6 +24,8 @@ int analPin = 34;
 float gluc = 0.0;
 float SugarLevel, hasil;
 String tanggal, waktu;
+float m = 0.2184;
+float c = 107.07;
 
 WiFiUDP ntp;
 NTPClient waktu32(ntp, "pool.ntp.org");
@@ -69,7 +71,7 @@ void prosesSampel(){
   }
 
   hasil = (float)total /jmlSampel;
-  SugarLevel = (0.00568* hasil) - 125.1668;
+  SugarLevel = (m* hasil) + c;
 
   Serial.print("Rata-rata (x)    : "); 
   Serial.println(hasil);
