@@ -3,11 +3,11 @@
 #include <NTPClient.h>
 #include <FirebaseESP32.h>
 
-#define FIREBASE_HOST "https://glucoesp32-default-rtdb.asia-southeast1.firebasedatabase.app/"
-#define FIREBASE_AUTH "5PrNU6D2w9MqcG6djwoFtgmgwphHhINvnkq53o1d"
+#define FIREBASE_HOST ""
+#define FIREBASE_AUTH ""
 
-const char* WIFI_SSID = "ojiks";
-const char* WIFI_PASSWORD = "12345678";
+const char* WIFI_SSID = "";
+const char* WIFI_PASSWORD = "";
 
 FirebaseAuth auth;
 FirebaseData fbdoControl; 
